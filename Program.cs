@@ -8,7 +8,6 @@ using Microsoft.SPOT.Hardware;
 using SecretLabs.NETMF.Hardware;
 using SecretLabs.NETMF.Hardware.NetduinoPlus;
 using Socket = System.Net.Sockets.Socket;
-using CW.NETMF.Hardware;
 
 namespace MonasheeWeather
 {
@@ -18,16 +17,15 @@ namespace MonasheeWeather
         static string selkirk = "192.168.1.34";
         static Int32 selkirkPort = 80;
         //const int updateInterval = 1000 * 60 * 30; // milliseconds * seconds * minutes
-        const int updateInterval = 1000 * 10;
+        const int updateInterval = 1000 * 20;
 
         static OutputPort led = new OutputPort(Pins.ONBOARD_LED, false);
         //static InterruptPort button = new InterruptPort(Pins.ONBOARD_SW1, false, Port.ResistorMode.Disabled, Port.InterruptMode.InterruptNone);
-
-        // soil moisture meter 
-        static AnalogInput moisture = new AnalogInput(Pins.GPIO_PIN_A0);
         
         // humidity on analog 5
         //static AnalogInput humidity = new AnalogInput(Pins.GPIO_PIN_A5);
+
+        //static Moisture moisture = new Moisture();
 
         public static void Main()
         {
@@ -43,9 +41,8 @@ namespace MonasheeWeather
             {
                 delayLoop(updateInterval);
 
-                Debug.Print("Testing mode");
-
                 // moisture sensor
+                moistureLevel();
 
                 // send to Selkirk server
                 //updateSelkirkServer(("value=" + System.Math.Abs((moisture1 + moisture2) / 2)).ToString(), "receive.soil.php");
@@ -56,11 +53,12 @@ namespace MonasheeWeather
                 {
                     Debug.Print("Address: " + aDevice.Address);
                     Debug.Print("Temp: " + (aDevice as DS18B20).Temperature);
-                                     
+                    
+                    // calculate rh based on air temp as well
                     var rh = humidity.Read() / (1.0546 - (0.00216 * (aDevice as DS18B20).Temperature));
                     //var rh = 5 * (0.0062 * (humidity.Read() + 0.16));
 
-
+                    // send to server the calculated RH based on air temp
                     if (aDevice.Address == "0000038BFA02")
                     {
                         Debug.Print("Humidity: " + rh + " analog in: " + humidity.Read());
@@ -78,6 +76,12 @@ namespace MonasheeWeather
                        
             }
             /**** END MAIN LOOP ****/
+        }
+
+        private static void moistureLevel()
+        {
+            var moisture = new Moisture();
+            Debug.Print("moisture level: " + moisture.MoistureLevel);
         }
 
         /// <summary>
