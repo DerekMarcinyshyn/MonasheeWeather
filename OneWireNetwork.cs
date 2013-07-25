@@ -258,7 +258,7 @@ namespace CW.NETMF.Hardware
     public class DS18B20 : OneWireDevice
     {
         public const byte FamilyCode = 0x28;
-
+        
         // Commands
         public const byte ConvertT = 0x44;
         public const byte CopyScratchpad = 0x48;

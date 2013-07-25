@@ -17,20 +17,17 @@ namespace MonasheeWeather
         // Selkirk server settings
         static string selkirk = "192.168.1.34";
         static Int32 selkirkPort = 80;
-        const int updateInterval = 1000 * 60 * 30; // milliseconds * seconds * minutes
+        //const int updateInterval = 1000 * 60 * 30; // milliseconds * seconds * minutes
+        const int updateInterval = 1000 * 10;
 
         static OutputPort led = new OutputPort(Pins.ONBOARD_LED, false);
-        static InterruptPort button = new InterruptPort(Pins.ONBOARD_SW1, false, Port.ResistorMode.Disabled, Port.InterruptMode.InterruptNone);
+        //static InterruptPort button = new InterruptPort(Pins.ONBOARD_SW1, false, Port.ResistorMode.Disabled, Port.InterruptMode.InterruptNone);
 
         // soil moisture meter 
-        // input analog pin 3
-        // flip - flop the current on 2 digital pins to avoid electrolysis
-        static AnalogInput moisture = new AnalogInput(Pins.GPIO_PIN_A3);
-        static OutputPort red = new OutputPort(Pins.GPIO_PIN_D9, false);
-        static OutputPort black = new OutputPort(Pins.GPIO_PIN_D8, false);
-
+        static AnalogInput moisture = new AnalogInput(Pins.GPIO_PIN_A0);
+        
         // humidity on analog 5
-        static AnalogInput humidity = new AnalogInput(Pins.GPIO_PIN_A5);
+        //static AnalogInput humidity = new AnalogInput(Pins.GPIO_PIN_A5);
 
         public static void Main()
         {
@@ -38,28 +35,22 @@ namespace MonasheeWeather
             Debug.Print(Debug.GC(true) + " bytes available after garbage collecting");
             
             // temperatures on 1 wire network -- digital pin 5
-            var deviceNetwork = new OneWireNetwork(Pins.GPIO_PIN_D5);
-            deviceNetwork.Discover();
+            //var deviceNetwork = new OneWireNetwork(Pins.GPIO_PIN_D5);
+            //deviceNetwork.Discover();
 
             /**** MAIN LOOP ****/
             while (true)
             {
                 delayLoop(updateInterval);
 
-                // moisture sensor
-                setSensorPolarity(true);
-                int moisture1 = moisture.Read();
-                Thread.Sleep(1000);
-                // switch polarity
-                setSensorPolarity(false);
-                int moisture2 = - moisture.Read();
+                Debug.Print("Testing mode");
 
-                Debug.Print("moisture1: " + moisture1 + "   moisture2: " + moisture2);
-                // average moisture values between +/-
-                Debug.Print("soil moisture: " + System.Math.Abs(( moisture1 + moisture2 ) / 2));
+                // moisture sensor
+
                 // send to Selkirk server
-                updateSelkirkServer(("value=" + System.Math.Abs((moisture1 + moisture2) / 2)).ToString(), "receive.soil.php");
+                //updateSelkirkServer(("value=" + System.Math.Abs((moisture1 + moisture2) / 2)).ToString(), "receive.soil.php");
                 
+                /**
                 // loop through all the digital devices
                 foreach (var aDevice in deviceNetwork)
                 {
@@ -81,28 +72,19 @@ namespace MonasheeWeather
                     
                     // send temps to Selkirk server
                     updateSelkirkServer( ("tempName=" + aDevice.Address + "&tempValue=" + (aDevice as DS18B20).Temperature).ToString(), "receive.php" );
-                    Thread.Sleep(1000);
+                    Thread.Sleep(1000); // let it write to the database
                 }
+                */
                        
             }
             /**** END MAIN LOOP ****/
         }
 
-        static void setSensorPolarity(Boolean flip)
-        {
-            if (flip)
-            {
-                red.Write(true);
-                black.Write(false);
-            }
-            else
-            {
-                red.Write(false);
-                black.Write(true);
-            }
-
-        }
-
+        /// <summary>
+        /// Send the data to the server via a POST request
+        /// </summary>
+        /// <param name="sensorData"></param>
+        /// <param name="url"></param>
         static void updateSelkirkServer(string sensorData, string url)
         {
             Debug.Print("Connected to Selkirk Server...\n");
@@ -113,7 +95,6 @@ namespace MonasheeWeather
             request += "Connection: close\n";
             request += "Content-Type: application/x-www-form-urlencoded\n";
             request += "Content-Length: " + sensorData.Length + "\n\n";
-
             request += sensorData;
 
             try
@@ -133,7 +114,13 @@ namespace MonasheeWeather
             }
         }
 
-        // Issues a http POST request to the specified server. (From the .NET Micro Framework SDK example)
+        /// <summary>
+        /// Issues a http POST request to the specified server. (From the .NET Micro Framework SDK example)
+        /// </summary>
+        /// <param name="server"></param>
+        /// <param name="port"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         private static String sendPOST(String server, Int32 port, String request)
         {
             const Int32 c_microsecondsPerSecond = 1000000;
@@ -179,7 +166,12 @@ namespace MonasheeWeather
             }
         }
 
-        // Creates a socket and uses the socket to connect to the server's IP address and port. (From the .NET Micro Framework SDK example)
+        /// <summary>
+        /// Creates a socket and uses the socket to connect to the server's IP address and port. (From the .NET Micro Framework SDK example)
+        /// </summary>
+        /// <param name="server"></param>
+        /// <param name="port"></param>
+        /// <returns></returns>
         private static Socket ConnectSocket(String server, Int32 port)
         {
             // Get server's IP address.
@@ -188,9 +180,14 @@ namespace MonasheeWeather
             // Create socket and connect to the server's IP address and port
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Connect(new IPEndPoint(hostEntry.AddressList[0], port));
+
             return socket;
         }
 
+        /// <summary>
+        /// Set the main loop delay
+        /// </summary>
+        /// <param name="interval"></param>
         static void delayLoop(int interval)
         {
             long now = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
