@@ -3,14 +3,14 @@ using System.Threading;
 using Microsoft.SPOT;
 using Microsoft.SPOT.Hardware;
 using SecretLabs.NETMF.Hardware;
-using SecretLabs.NETMF.Hardware.NetduinoPlus;
+using SecretLabs.NETMF.Hardware.Netduino;
 
 namespace MonasheeWeather
 {
     public class Moisture
     {
         // soil moisture meter 
-        private static AnalogInput moisture = new AnalogInput(Pins.GPIO_PIN_A0);
+        private static AnalogInput moisture = new AnalogInput(AnalogChannels.ANALOG_PIN_A0);
 
         // mositure level
         private int _moisture;
@@ -25,7 +25,7 @@ namespace MonasheeWeather
             
             var moisture3 = moisture.Read();
 
-            _moisture = (moisture1 + moisture2 + moisture3) / 3;
+            _moisture = (int)(moisture1 + moisture2 + moisture3) / 3;
         }
 
         public int MoistureLevel

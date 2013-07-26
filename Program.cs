@@ -6,7 +6,7 @@ using System.Threading;
 using Microsoft.SPOT;
 using Microsoft.SPOT.Hardware;
 using SecretLabs.NETMF.Hardware;
-using SecretLabs.NETMF.Hardware.NetduinoPlus;
+using SecretLabs.NETMF.Hardware.Netduino;
 using Socket = System.Net.Sockets.Socket;
 
 namespace MonasheeWeather
@@ -17,15 +17,13 @@ namespace MonasheeWeather
         static string selkirk = "192.168.1.34";
         static Int32 selkirkPort = 80;
         //const int updateInterval = 1000 * 60 * 30; // milliseconds * seconds * minutes
-        const int updateInterval = 1000 * 20;
+        const int updateInterval = 1000 * 2;
 
         static OutputPort led = new OutputPort(Pins.ONBOARD_LED, false);
         //static InterruptPort button = new InterruptPort(Pins.ONBOARD_SW1, false, Port.ResistorMode.Disabled, Port.InterruptMode.InterruptNone);
         
         // humidity on analog 5
-        //static AnalogInput humidity = new AnalogInput(Pins.GPIO_PIN_A5);
-
-        //static Moisture moisture = new Moisture();
+        static AnalogInput humidity = new AnalogInput(AnalogChannels.ANALOG_PIN_A3);
 
         public static void Main()
         {
@@ -41,8 +39,10 @@ namespace MonasheeWeather
             {
                 delayLoop(updateInterval);
 
+                Debug.Print("rh: " + humidity.Read());
+
                 // moisture sensor
-                moistureLevel();
+                //moistureLevel();
 
                 // send to Selkirk server
                 //updateSelkirkServer(("value=" + System.Math.Abs((moisture1 + moisture2) / 2)).ToString(), "receive.soil.php");
