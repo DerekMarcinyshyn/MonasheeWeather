@@ -3,6 +3,7 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using ThreelnDotOrg.NETMF.Hardware;
 using Microsoft.SPOT;
 using Microsoft.SPOT.Hardware;
 using SecretLabs.NETMF.Hardware;
@@ -33,6 +34,23 @@ namespace MonasheeWeather
             // temperatures on 1 wire network -- digital pin 5
             //var deviceNetwork = new OneWireNetwork(Pins.GPIO_PIN_D5);
             //deviceNetwork.Discover();
+            
+            
+            // one wire network -- temperature
+            OutputPort devicePin = new OutputPort(Pins.GPIO_PIN_D5, false);
+
+            OneWire onewireBus = new OneWire(devicePin);
+            var devices = OneWireBus.Scan(onewireBus, OneWireBus.Family.DS18B20);
+
+            // create array to hold DS18B20 references
+            DS18B20[] temps = new DS18B20[devices.Length];
+
+            for (int i = 0; i < devices.Length; i++)
+            {
+                temps[i] = new DS18B20(onewireBus, devices[i]);
+            }
+
+
 
             /**** MAIN LOOP ****/
             while (true)
@@ -40,6 +58,15 @@ namespace MonasheeWeather
                 delayLoop(updateInterval);
 
                 Debug.Print("rh: " + humidity.Read());
+
+                // loop through temps
+                for (int j = 0; j < devices.Length; j++)
+                {
+                    float temp = temps[j].ConvertAndReadTemperature();
+                    temp = temp / 5 * 9 + 32;
+                    Debug.Print(j.ToString() + ": " + temp.ToString());
+                }
+
 
                 // moisture sensor
                 //moistureLevel();
