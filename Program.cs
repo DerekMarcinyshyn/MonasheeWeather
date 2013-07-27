@@ -49,29 +49,30 @@ namespace MonasheeWeather
             /**** MAIN LOOP ****/
             while (true)
             {
-                Debug.Print("----------------------------------");
                 Debug.Print("");
+                Debug.Print("----------------------------------");
+                
                 delayLoop(updateInterval);
 
                 // loop through temps
                 for (int j = 0; j < devices.Length; j++)
                 {                   
-
+                    // get the temperature and convert to Fahrenheit
                     float temp = temps[j].ConvertAndReadTemperature();
                     temp = temp / 5 * 9 + 32;
-                    Debug.Print(j.ToString() + ": " + temp.ToString());
 
                     // temp[0] is the air temp
                     if (j == 0)
                     {
                         var relativeHumidity = humidity.Read() / (1.0546 - (0.00216 * temp));
                         updateSelkirkServer(("value=" + relativeHumidity).ToString(), "receive.humidity.php");
-                        Debug.Print("relative humidity: " + relativeHumidity.ToString());
+                        //Debug.Print("relative humidity: " + relativeHumidity.ToString());
+                        Thread.Sleep(500); // little delay before writing temperture
                     }
 
                     // send temps to Selkirk server
                     updateSelkirkServer(("tempName=" + j + "&tempValue=" + temp), "receive.php");
-                    Thread.Sleep(1000); // let it write to the database
+                    Thread.Sleep(1000); // let it write to the database before writing the next temp
                 }
 
 
@@ -84,7 +85,7 @@ namespace MonasheeWeather
         private static void moistureLevel()
         {
             var moisture = new Moisture();
-            Debug.Print("moisture level: " + (moisture.MoistureLevel / 10).ToString());
+            //Debug.Print("moisture level: " + (moisture.MoistureLevel / 10).ToString());
             
             // send to moisture Selkirk server
             updateSelkirkServer(("value=" + moisture.MoistureLevel / 10), "receive.soil.php");
@@ -101,7 +102,7 @@ namespace MonasheeWeather
             led.Write(true);
 
             String request = "POST /monitor/" + url + " HTTP/1.1\n";
-            request += "Host: 192.168.1.34\n";
+            request += "Host: " + selkirk + "\n";
             request += "Connection: close\n";
             request += "Content-Type: application/x-www-form-urlencoded\n";
             request += "Content-Length: " + sensorData.Length + "\n\n";
