@@ -21,58 +21,58 @@ namespace MonasheeWeather
         const int updateInterval = 1000 * 2;
 
         static OutputPort led = new OutputPort(Pins.ONBOARD_LED, false);
-        //static InterruptPort button = new InterruptPort(Pins.ONBOARD_SW1, false, Port.ResistorMode.Disabled, Port.InterruptMode.InterruptNone);
+        static InterruptPort button = new InterruptPort(Pins.ONBOARD_SW1, false, Port.ResistorMode.Disabled, Port.InterruptMode.InterruptNone);
         
         // humidity on analog 5
-        static AnalogInput humidity = new AnalogInput(AnalogChannels.ANALOG_PIN_A3);
+        static SecretLabs.NETMF.Hardware.AnalogInput humidity = new SecretLabs.NETMF.Hardware.AnalogInput(Pins.GPIO_PIN_A5);
+
+        // set temperature pin
+        static OutputPort devicePin = new OutputPort(Pins.GPIO_PIN_D5, false);
 
         public static void Main()
         {
             // check RAM usage
-            Debug.Print(Debug.GC(true) + " bytes available after garbage collecting");
+            Debug.Print(Debug.GC(true) + " bytes available after garbage collecting");           
             
-            // temperatures on 1 wire network -- digital pin 5
-            //var deviceNetwork = new OneWireNetwork(Pins.GPIO_PIN_D5);
-            //deviceNetwork.Discover();
-            
-            
-            // one wire network -- temperature
-            OutputPort devicePin = new OutputPort(Pins.GPIO_PIN_D5, false);
-
+            // one wire network -- temperature            
             OneWire onewireBus = new OneWire(devicePin);
             var devices = OneWireBus.Scan(onewireBus, OneWireBus.Family.DS18B20);
 
             // create array to hold DS18B20 references
             DS18B20[] temps = new DS18B20[devices.Length];
-
             for (int i = 0; i < devices.Length; i++)
             {
                 temps[i] = new DS18B20(onewireBus, devices[i]);
             }
 
 
-
             /**** MAIN LOOP ****/
             while (true)
             {
+                Debug.Print("----------------------------------");
+                Debug.Print("");
                 delayLoop(updateInterval);
-
-                Debug.Print("rh: " + humidity.Read());
 
                 // loop through temps
                 for (int j = 0; j < devices.Length; j++)
-                {
+                {                   
+
                     float temp = temps[j].ConvertAndReadTemperature();
                     temp = temp / 5 * 9 + 32;
                     Debug.Print(j.ToString() + ": " + temp.ToString());
+
+                    // temp[0] is the air temp
+                    if (j == 0)
+                    {
+                        var relativeHumidity = (humidity.Read() / (1.0546 - (0.00216 * temp))) / 10;
+                        //updateSelkirkServer(("value=" + relativeHumidity).ToString(), "receive.humidity.php");
+                        Debug.Print("relative humidity: " + relativeHumidity.ToString());
+                    }
                 }
 
 
                 // moisture sensor
-                //moistureLevel();
-
-                // send to Selkirk server
-                //updateSelkirkServer(("value=" + System.Math.Abs((moisture1 + moisture2) / 2)).ToString(), "receive.soil.php");
+                moistureLevel();
                 
                 /**
                 // loop through all the digital devices
@@ -108,7 +108,10 @@ namespace MonasheeWeather
         private static void moistureLevel()
         {
             var moisture = new Moisture();
-            Debug.Print("moisture level: " + moisture.MoistureLevel);
+            Debug.Print("moisture level: " + (moisture.MoistureLevel / 10).ToString());
+            
+            // send to moisture Selkirk server
+            //updateSelkirkServer(("value=" + (moisture.MoistureLevel / 100).toString(), "receive.soil.php");
         }
 
         /// <summary>

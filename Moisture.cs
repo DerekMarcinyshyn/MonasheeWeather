@@ -9,8 +9,8 @@ namespace MonasheeWeather
 {
     public class Moisture
     {
-        // soil moisture meter 
-        private static AnalogInput moisture = new AnalogInput(AnalogChannels.ANALOG_PIN_A0);
+        // soil moisture meter analog 0
+        private static SecretLabs.NETMF.Hardware.AnalogInput moisture = new SecretLabs.NETMF.Hardware.AnalogInput(Pins.GPIO_PIN_A0);
 
         // mositure level
         private int _moisture;
