@@ -64,43 +64,19 @@ namespace MonasheeWeather
                     // temp[0] is the air temp
                     if (j == 0)
                     {
-                        var relativeHumidity = (humidity.Read() / (1.0546 - (0.00216 * temp))) / 10;
-                        //updateSelkirkServer(("value=" + relativeHumidity).ToString(), "receive.humidity.php");
+                        var relativeHumidity = humidity.Read() / (1.0546 - (0.00216 * temp));
+                        updateSelkirkServer(("value=" + relativeHumidity).ToString(), "receive.humidity.php");
                         Debug.Print("relative humidity: " + relativeHumidity.ToString());
                     }
+
+                    // send temps to Selkirk server
+                    updateSelkirkServer(("tempName=" + j + "&tempValue=" + temp), "receive.php");
+                    Thread.Sleep(1000); // let it write to the database
                 }
 
 
                 // moisture sensor
-                moistureLevel();
-                
-                /**
-                // loop through all the digital devices
-                foreach (var aDevice in deviceNetwork)
-                {
-                    Debug.Print("Address: " + aDevice.Address);
-                    Debug.Print("Temp: " + (aDevice as DS18B20).Temperature);
-                    
-                    // calculate rh based on air temp as well
-                    var rh = humidity.Read() / (1.0546 - (0.00216 * (aDevice as DS18B20).Temperature));
-                    //var rh = 5 * (0.0062 * (humidity.Read() + 0.16));
-
-                    // send to server the calculated RH based on air temp
-                    if (aDevice.Address == "0000038BFA02")
-                    {
-                        Debug.Print("Humidity: " + rh + " analog in: " + humidity.Read());
-
-                        // send to Selkirk server
-                        updateSelkirkServer(("value=" + rh).ToString(), "receive.humidity.php");
-
-                    }
-                    
-                    // send temps to Selkirk server
-                    updateSelkirkServer( ("tempName=" + aDevice.Address + "&tempValue=" + (aDevice as DS18B20).Temperature).ToString(), "receive.php" );
-                    Thread.Sleep(1000); // let it write to the database
-                }
-                */
-                       
+                moistureLevel();                       
             }
             /**** END MAIN LOOP ****/
         }
@@ -111,7 +87,7 @@ namespace MonasheeWeather
             Debug.Print("moisture level: " + (moisture.MoistureLevel / 10).ToString());
             
             // send to moisture Selkirk server
-            //updateSelkirkServer(("value=" + (moisture.MoistureLevel / 100).toString(), "receive.soil.php");
+            updateSelkirkServer(("value=" + moisture.MoistureLevel / 10), "receive.soil.php");
         }
 
         /// <summary>
