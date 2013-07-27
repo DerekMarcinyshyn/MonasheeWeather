@@ -17,8 +17,7 @@ namespace MonasheeWeather
         // Selkirk server settings
         static string selkirk = "192.168.1.34";
         static Int32 selkirkPort = 80;
-        //const int updateInterval = 1000 * 60 * 30; // milliseconds * seconds * minutes
-        const int updateInterval = 1000 * 2;
+        const int updateInterval = 1000 * 60 * 30; // milliseconds * seconds * minutes
 
         static OutputPort led = new OutputPort(Pins.ONBOARD_LED, false);
         static InterruptPort button = new InterruptPort(Pins.ONBOARD_SW1, false, Port.ResistorMode.Disabled, Port.InterruptMode.InterruptNone);
