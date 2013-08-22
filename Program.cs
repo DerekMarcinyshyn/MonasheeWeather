@@ -3,6 +3,7 @@ using System.Text;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.IO;
 using ThreelnDotOrg.NETMF.Hardware;
 using Microsoft.SPOT;
 using Microsoft.SPOT.Hardware;
@@ -19,6 +20,14 @@ namespace MonasheeWeather
         static Int32 selkirkPort = 80;
         const int updateInterval = 1000 * 60 * 30; // milliseconds * seconds * minutes
 
+        // Netduino Network Interface settings
+        static string IP_ADDRESS = "192.168.1.51";
+        static string IP_SUBNET_MASK = "255.255.255.0";
+        static string IP_GATEWAY = "192.168.1.1";
+
+        // security string
+        static string PUBLIC_KEY = "htvohENTyBHdT5TzH5X6";
+
         static OutputPort led = new OutputPort(Pins.ONBOARD_LED, false);
         static InterruptPort button = new InterruptPort(Pins.ONBOARD_SW1, false, Port.ResistorMode.Disabled, Port.InterruptMode.InterruptNone);
         
@@ -31,7 +40,11 @@ namespace MonasheeWeather
         public static void Main()
         {
             // check RAM usage
-            Debug.Print(Debug.GC(true) + " bytes available after garbage collecting");           
+            Debug.Print(Debug.GC(true) + " bytes available after garbage collecting");
+
+            // Set the Static IP Address
+            var NetworkInterface = Microsoft.SPOT.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()[0];
+            NetworkInterface.EnableStaticIP(IP_ADDRESS, IP_SUBNET_MASK, IP_GATEWAY);
             
             // one wire network -- temperature            
             OneWire onewireBus = new OneWire(devicePin);
@@ -57,20 +70,33 @@ namespace MonasheeWeather
                 for (int j = 0; j < devices.Length; j++)
                 {                   
                     // get the temperature and convert to Fahrenheit
-                    float temp = temps[j].ConvertAndReadTemperature();
-                    temp = temp / 5 * 9 + 32;
+                    float temp = temps[j].ConvertAndReadTemperature();                    
 
                     // temp[0] is the air temp
                     if (j == 0)
                     {
-                        var relativeHumidity = humidity.Read() / (1.0546 - (0.00216 * temp));
-                        updateSelkirkServer(("value=" + relativeHumidity).ToString(), "receive.humidity.php");
-                        //Debug.Print("relative humidity: " + relativeHumidity.ToString());
+                        int h1 = humidity.Read();
+                        Thread.Sleep(1000);
+
+                        int h2 = humidity.Read();
+                        Thread.Sleep(1000);
+
+                        int h3 = humidity.Read();
+
+                        float humidityAverage = (h1 + h2 + h3) / 3;
+
+                        var relativeHumidity = humidityAverage / (1.0546 - (0.00216 * temp)) / 10;
+                        updateSelkirkServer(("value=" + relativeHumidity + "&key=" + PUBLIC_KEY).ToString(), "app/receive.humidity.php");
+                        Debug.Print("relative humidity: " + relativeHumidity.ToString());
                         Thread.Sleep(500); // little delay before writing temperture
                     }
 
+                    // convert temps to Fahrenheit
+                    temp = temp / 5 * 9 + 32;
+                    
+                    Debug.Print("tempName: " + j + " tempValue: " + temp);
                     // send temps to Selkirk server
-                    updateSelkirkServer(("tempName=" + j + "&tempValue=" + temp), "receive.php");
+                    updateSelkirkServer(("tempName=" + j + "&tempValue=" + temp + "&key=" + PUBLIC_KEY), "app/receive.php");
                     Thread.Sleep(1000); // let it write to the database before writing the next temp
                 }
 
@@ -87,7 +113,7 @@ namespace MonasheeWeather
             //Debug.Print("moisture level: " + (moisture.MoistureLevel / 10).ToString());
             
             // send to moisture Selkirk server
-            updateSelkirkServer(("value=" + moisture.MoistureLevel / 10), "receive.soil.php");
+            updateSelkirkServer(("value=" + moisture.MoistureLevel / 10 + "&key=" + PUBLIC_KEY), "app/receive.soil.php");
         }
 
         /// <summary>
